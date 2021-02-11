@@ -176,12 +176,12 @@ class PolarityModel:
         dim = [200, 300]
         param_grid = dict(
             optimizer=optimizers,
-            batch_size=batches, i
+            batch_size=batches,
             nit=init,
             embedding_dim=dim,
             class_weight=compute_class_weight('balanced', np.unique(y), np.ravel(y))
         )
-        grid = GridSearchCV(estimator=self.model, param_grid=param_grid, cv=5, n_jobs=-1)
+        grid = GridSearchCV(estimator=self.model, param_grid=param_grid, cv=5)
         x = np.expand_dims(data['text'], -1)
         y = self.encode(data['target'])
         grid_result = grid.fit(
