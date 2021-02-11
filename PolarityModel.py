@@ -174,7 +174,8 @@ class PolarityModel:
         batches = [32, 64]
         param_grid = dict(optimizer=optimizers, batch_size=batches, init=init)
         grid = GridSearchCV(estimator=self.model, param_grid=param_grid)
-        x = tf.strings.as_string(data['text'])
+        # x = tf.strings.as_string(data['text'])
+        x = np.expand_dims(data['text'])
         grid_result = grid.fit(x, self.encode(data['target']))
 
     def predict(self, text, **config):
