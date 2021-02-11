@@ -153,7 +153,7 @@ class PolarityModel:
                 )
         model.add(LSTM(lstm_units))
         model.add(Dense(2, activation='softmax', kernel_initializer=init))
-        model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+        model.compile(loss='sparse_categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
         
         return model
 
@@ -175,7 +175,7 @@ class PolarityModel:
         batches = [32]
         dim = [200, 300]
         x = np.expand_dims(data['text'], -1)
-        y = self.encode(data['target'])
+        y = data['target']
         param_grid = dict(
             optimizer=optimizers,
             batch_size=batches,
