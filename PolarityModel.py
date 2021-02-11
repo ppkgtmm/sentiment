@@ -4,6 +4,7 @@ from nltk.tokenize import word_tokenize
 from tensorflow.keras.layers.experimental.preprocessing import TextVectorization
 from keras.wrappers.scikit_learn import KerasClassifier
 from sklearn.model_selection import GridSearchCV
+from sklearn.utils.class_weight import compute_class_weight
 from keras.models import Sequential
 from keras.layers import Dense, Embedding, LSTM
 import numpy as np
@@ -171,11 +172,17 @@ class PolarityModel:
         )
         optimizers = ['adam']
         init = ['glorot_uniform', 'glorot_normal']
-        batches = [32, 64]
-        param_grid = dict(optimizer=optimizers, batch_size=batches, init=init)
-        grid = GridSearchCV(estimator=self.model, param_grid=param_grid, cv=5)
-        x = np.expand_dims(data['text'],-1)
-        grid_result = grid.fit(x, self.encode(data['target']))
+        batches = [32]
+        dim = [200, 300]
+        param_grid = dict(optimizer=optimizers, batch_size=batches, init=init, embedding_dim=dim)
+        grid = GridSearchCV(estimator=self.model, param_grid=param_grid, cv=5, n_jobs=-1)
+        x = np.expand_dims(data['text'], -1)
+        y = self.encode(data['target'])
+        grid_result = grid.fit(
+            x,
+            y,
+            clf__class_weight=compute_class_weight('balanced', np.unique(y), y)
+        )
 
     def predict(self, text, **config):
         
