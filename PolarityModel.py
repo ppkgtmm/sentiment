@@ -1,11 +1,12 @@
 import pandas as pd
 import re
 from nltk.tokenize import word_tokenize
-from keras.preprocessing.text import Tokenizer
-from keras.preprocessing import sequence
+from keras.layers.experimental.preprocessing import TextVectorization
+from keras.wrappers.scikit_learn import KerasClassifier
+from sklearn.model_selection import GridSearchCV
 import keras.backend as K
 from keras.models import Sequential
-from keras.layers import Dense, Embedding, Conv1D, MaxPooling1D, Bidirectional, LSTM
+from keras.layers import Dense, Embedding, Conv1D, MaxPooling1D, LSTM
 from tensorflow.keras import regularizers
 from keras.callbacks import ModelCheckpoint
 import numpy as np
@@ -23,7 +24,7 @@ class PolarityModel:
 
     def __init__(self, **args):
         self.max_features = args.get("max_features", 50000)
-        self.max_len = args.get("max_len", 3200)
+        self.max_len = args.get("max_len", 2700)
         self.train_size = args.get("train_size", 0.8)
         self.seed = args.get("seed", 42)
         self.epoch = args.get("epoch", 4)
@@ -120,16 +121,6 @@ class PolarityModel:
 
         return " ".join(tokens)
 
-    def make_tokenizer(self, text, max_features):
-        self.tokenizer = Tokenizer(num_words=max_features)
-        self.tokenizer.fit_on_texts(list(text))
-
-    def text_to_sequence(self, text):
-        return self.tokenizer.texts_to_sequences(text)
-
-    def pad(self,x, max_len):
-        return sequence.pad_sequences(x, maxlen=max_len)
-
     def encode(self, data, drop=False):
         return pd.get_dummies(data, drop_first=drop)
 
@@ -141,119 +132,32 @@ class PolarityModel:
             random_state=args.get("seed", self.seed)
         )
 
-    def get_architecture(self, model, **config):
-        model.add(
-                    Embedding(
-                        self.max_features,
-                        config.get("emb_size", 200),
-                        input_length=self.max_len
+    def create_model(
+            self,
+            embedding_dim=100,
+            lstm_units=128,
+            optimizer='adam',
+            init='glorot_uniform'
+        ):
+        model = keras.models.Sequential()
+        model.add(tf.keras.Input(shape=(1,), dtype=tf.string))
+        model.add(TextVectorization(
+                        max_tokens=self.max_features,
+                        output_mode='int',
+                        output_sequence_length=self.max_len
                     )
                 )
-        model.add(
-                    Conv1D(
-                        filters=config.get("filters", 32),
-                        kernel_size=config.get("kernel", 3),
-                        padding='same',
-                        activation='relu',
-                        kernel_regularizer=config.get("conv_reg", None),
-                        bias_regularizer=config.get("conv_reg", None)
+        model.add(Embedding(
+                            self.max_features,
+                            embedding_dim,
+                            mask_zero=True
                     )
                 )
-        model.add(MaxPooling1D(pool_size=config.get("pool_size",2)))
-        model.add(
-                    Conv1D(
-                        filters=config.get("filters", 32),
-                        kernel_size=config.get("kernel", 3),
-                        padding='same',
-                        activation='relu',
-                        kernel_regularizer=config.get("conv_reg", None),
-                        bias_regularizer=config.get("conv_reg", None)
-                    )
-                )
-        model.add(MaxPooling1D(pool_size=config.get("pool_size",2)))
-
-        model.add(
-                    Conv1D(
-                        filters=config.get("filters", 32),
-                        kernel_size=config.get("kernel", 3),
-                        padding='same',
-                        activation='relu',
-                        kernel_regularizer=config.get("conv_reg", None),
-                        bias_regularizer=config.get("conv_reg", None)
-                    )
-                )
-        model.add(MaxPooling1D(pool_size=config.get("pool_size",2)))
-        model.add(
-                    Conv1D(
-                        filters=config.get("filters", 32),
-                        kernel_size=config.get("kernel", 3),
-                        padding='same',
-                        activation='relu',
-                        kernel_regularizer=config.get("conv_reg", None),
-                        bias_regularizer=config.get("conv_reg", None)
-                    )
-                )
-        model.add(MaxPooling1D(pool_size=config.get("pool_size",2)))
-
-
-        model.add(
-                    Bidirectional(LSTM(
-                        config.get("ls_units", 200),
-                        dropout=0.2,
-                        recurrent_dropout=0.2,
-                        kernel_regularizer=config.get("ls_reg", None),
-                        recurrent_regularizer=config.get("ls_reg", None),
-                        bias_regularizer=config.get("ls_reg", None),
-                        return_sequences=True
-                    ))
-                )
-        model.add(
-                    Bidirectional(LSTM(
-                        config.get("ls_units", 100),
-                        dropout=0.2,
-                        recurrent_dropout=0.2,
-                        kernel_regularizer=config.get("ls_reg", None),
-                        recurrent_regularizer=config.get("ls_reg", None),
-                        bias_regularizer=config.get("ls_reg", None),
-                    ))
-                )
-        model.add(
-                Dense(
-                        config.get("out_units", 2),
-                        activation=config.get("out_activation", "softmax")
-                    )
-                )
-        model.compile(
-                        loss=config.get("loss", "categorical_crossentropy"),
-                        optimizer=config.get("optimizer",  "adam"),
-                        metrics= [
-                                  keras.metrics.TruePositives(name='tp'),
-                                  keras.metrics.FalsePositives(name='fp'),
-                                  keras.metrics.TrueNegatives(name='tn'),
-                                  keras.metrics.FalseNegatives(name='fn'), 
-                                  keras.metrics.CategoricalAccuracy(name='accuracy'),
-                                  keras.metrics.Precision(name='precision'),
-                                  keras.metrics.Recall(name='recall'),
-                                  keras.metrics.AUC(name='auc')
-                                ]
-                    )
-        model.summary()
+        model.add(LSTM(lstm_units))
+        model.add(Dense(2, activation='softmax', kernel_initializer=init))
+        model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+        
         return model
-
-    def get_model(self, **config):
-        K.clear_session()
-        if config.get("use_pre", False):
-            for layer in self.model.layers:
-                layer.trainable = False
-                layer._name += str("_old")
-                self.model.pop()
-                self.model.pop()
-                model = self.model
-
-        else:
-            model = Sequential()
-        return self.get_architecture(model, **config)
-
 
     def train(self, **args):
         data = self.read_data(**args)
@@ -261,36 +165,28 @@ class PolarityModel:
         if args.get("is_cleaned", False):
             data["text"].apply(self.preprocess)
 
-        if args.get("use_pre", False) and args.get("tk_path", None) is not None and args.get("model_path", None) is not None:
-          self.load(args.get("model_path"), args.get("tk_path"))
-        else:
-          self.make_tokenizer(data["text"], self.max_features)
+        # x, x_val, y, y_val = self.split_data(
+        #                         data['text'].astype(str),
+        #                         data['target']
+        #                     )
 
-        x = self.pad(self.text_to_sequence(data["text"]), self.max_len)
-        y = self.encode(data["target"])
+        # import done, create model done
+        # supply raw text, OH labels to fit
+        self.model = KerasClassifier(
+            build_fn=self.create_model,
+            epochs=self.epoch,
+            verbose=1
+        )
+        optimizers = ['rmsprop', 'adam']
+        init = ['glorot_uniform', 'normal', 'uniform']
+        batches = [32, 64]
+        param_grid = dict(optimizer=optimizers, batch_size=batches, init=init)
+        grid = GridSearchCV(estimator=self.model, param_grid=param_grid)
+        grid_result = grid.fit(data['text'].astype(str), self.encode(data['target']))
 
-        x, x_val, y, y_val = self.split_data(x, y)
-        self.model = self.get_model(**args)
-        mc = ModelCheckpoint(
-                        "model.h5", monitor='val_loss',
-                        mode='min', verbose=1, save_best_only=True
-                    )
-
-        self.model.fit(
-                    x,
-                    y,
-                    epochs=self.epoch,
-                    validation_data=(x_val, y_val),
-                    batch_size=self.batch_size,
-                    verbose=1,
-                    callbacks=[mc]
-                )
-
-    def predict(self, text,  **config):
-        text = self.preprocess(text)
-        x_test = self.pad(np.asarray(self.text_to_sequence([text])), config.get("max_len", self.max_len))
-
-        result = self.model.predict(x_test, verbose=1)[0] 
+    def predict(self, text, **config):
+        
+        result = self.model.predict(self.preprocess(text), verbose=1)[0] 
         if np.argmax(result) == 0:
             polarity =  'negative'
         else:
@@ -299,18 +195,6 @@ class PolarityModel:
             "result": result,
             "polarity": polarity
         }
-
-
-    def evaluate(self, **config):
-        data = self.read_data(**config)
-        data["text"] = data.text.apply(self.preprocess)
-        x = self.pad(self.text_to_sequence(data["text"]), config.get("max_len", self.max_len))
-        y = self.encode(data["target"])
-        acc = self.model.evaluate(
-                    x,
-                    y
-                )[1]
-        return acc
         
     def load(self, model, tokenizer):
         self.model = load_model(model)
