@@ -169,14 +169,13 @@ class PolarityModel:
             epochs=self.epoch,
             verbose=1
         )
-        optimizers = ['rmsprop', 'adam']
-        init = ['glorot_uniform', 'normal', 'uniform']
+        optimizers = ['adam']
+        init = ['glorot_uniform', 'glorot_normal']
         batches = [32, 64]
         param_grid = dict(optimizer=optimizers, batch_size=batches, init=init)
         grid = GridSearchCV(estimator=self.model, param_grid=param_grid)
-        # x = tf.strings.as_string(data['text'])
         x = np.expand_dims(data['text'],-1)
-        grid_result = grid.fit(x, self.encode(data['target']))
+        grid_result = grid.fit(x, self.encode(data['target']), cv=5)
 
     def predict(self, text, **config):
         
