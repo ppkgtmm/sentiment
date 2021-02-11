@@ -137,7 +137,7 @@ class PolarityModel:
             init='glorot_uniform'
         ):
         model = keras.models.Sequential()
-        model.add(keras.Input(shape=(1,), dtype=tf.float32))
+        model.add(keras.Input(shape=(1,), dtype=tf.string))
         model.add(TextVectorization(
                         max_tokens=self.max_features,
                         output_mode='int',
@@ -162,11 +162,6 @@ class PolarityModel:
         if args.get("is_cleaned", False):
             data["text"].apply(self.preprocess)
 
-        # x, x_val, y, y_val = self.split_data(
-        #                         data['text'].astype(str),
-        #                         data['target']
-        #                     )
-
         # import done, create model done
         # supply raw text, OH labels to fit
         self.model = KerasClassifier(
@@ -179,7 +174,7 @@ class PolarityModel:
         batches = [32, 64]
         param_grid = dict(optimizer=optimizers, batch_size=batches, init=init)
         grid = GridSearchCV(estimator=self.model, param_grid=param_grid)
-        grid_result = grid.fit(data['text'].astype(str), self.encode(data['target']))
+        grid_result = grid.fit(tf.strings.as_string(data['text']), self.encode(data['target']))
 
     def predict(self, text, **config):
         
