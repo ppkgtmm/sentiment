@@ -281,6 +281,7 @@ class PolarityModel:
                     y,
                     epochs=self.epoch,
                     validation_data=(x_val, y_val),
+                    batch_size=self.batch_size,
                     verbose=1,
                     callbacks=[mc]
                 )
