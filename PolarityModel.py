@@ -176,6 +176,7 @@ class PolarityModel:
         dim = [200, 300]
         x = np.expand_dims(data['text'], -1)
         y = data['target']
+        x, _x, y, _y = self.split_data(x,y, train_size=0.7)
         param_grid = dict(
             optimizer=optimizers,
             batch_size=batches,
@@ -186,7 +187,8 @@ class PolarityModel:
         grid_result = grid.fit(
             x,
             y,
-            class_weight= dict(enumerate(compute_class_weight('balanced', np.unique(y), np.ravel(y))))
+            class_weight=dict(enumerate(compute_class_weight('balanced', np.unique(y), np.ravel(y)))),
+            validation_split=0.2
         )
 
     def predict(self, text, **config):
