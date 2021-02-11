@@ -174,6 +174,8 @@ class PolarityModel:
         init = ['glorot_uniform', 'glorot_normal']
         batches = [32]
         dim = [200, 300]
+        x = np.expand_dims(data['text'], -1)
+        y = self.encode(data['target'])
         param_grid = dict(
             optimizer=optimizers,
             batch_size=batches,
@@ -182,8 +184,6 @@ class PolarityModel:
             class_weight=compute_class_weight('balanced', np.unique(y), np.ravel(y))
         )
         grid = GridSearchCV(estimator=self.model, param_grid=param_grid, cv=5)
-        x = np.expand_dims(data['text'], -1)
-        y = self.encode(data['target'])
         grid_result = grid.fit(
             x,
             y
