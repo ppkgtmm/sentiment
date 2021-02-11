@@ -176,7 +176,7 @@ class PolarityModel:
         dim = [200, 300]
         x = np.expand_dims(data['text'], -1)
         y = np.expand_dims(data['target'], -1)
-        x, _x, y, _y = self.split_data(x, y, train_size=0.7)
+        x, _x, y, _y = self.split_data(x, y, train_size=0.6)
         param_grid = dict(
             optimizer=optimizers,
             batch_size=batches,
