@@ -173,9 +173,9 @@ class PolarityModel:
         init = ['glorot_uniform', 'glorot_normal']
         batches = [32, 64]
         param_grid = dict(optimizer=optimizers, batch_size=batches, init=init)
-        grid = GridSearchCV(estimator=self.model, param_grid=param_grid)
+        grid = GridSearchCV(estimator=self.model, param_grid=param_grid, cv=5)
         x = np.expand_dims(data['text'],-1)
-        grid_result = grid.fit(x, self.encode(data['target']), cv=5)
+        grid_result = grid.fit(x, self.encode(data['target']))
 
     def predict(self, text, **config):
         
