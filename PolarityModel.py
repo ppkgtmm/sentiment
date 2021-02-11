@@ -181,7 +181,7 @@ class PolarityModel:
         grid_result = grid.fit(
             x,
             y,
-            clf__class_weight=compute_class_weight('balanced', np.unique(y), y)
+            clf__class_weight=compute_class_weight('balanced', np.unique(y), np.ravel(y))
         )
 
     def predict(self, text, **config):
