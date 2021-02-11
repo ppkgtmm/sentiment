@@ -1,6 +1,7 @@
 import pandas as pd
 import re
 from nltk.tokenize import word_tokenize
+from tensorflow.keras.layers.experimental.preprocessing import TextVectorization
 from keras.wrappers.scikit_learn import KerasClassifier
 from sklearn.model_selection import GridSearchCV
 import keras.backend as K
@@ -13,7 +14,6 @@ from sklearn.model_selection import train_test_split
 from tensorflow.keras.models import load_model
 import pickle
 import keras
-import tensorflow as tf
 
 class PolarityModel:
 
@@ -140,7 +140,7 @@ class PolarityModel:
         ):
         model = keras.models.Sequential()
         model.add(keras.Input(shape=(1,)))
-        model.add(tf.keras.layers.experimental.preprocessing.TextVectorization(
+        model.add(TextVectorization(
                         max_tokens=self.max_features,
                         output_mode='int',
                         output_sequence_length=self.max_len
