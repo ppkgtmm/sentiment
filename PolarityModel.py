@@ -4,16 +4,14 @@ from nltk.tokenize import word_tokenize
 from tensorflow.keras.layers.experimental.preprocessing import TextVectorization
 from keras.wrappers.scikit_learn import KerasClassifier
 from sklearn.model_selection import GridSearchCV
-import keras.backend as K
 from keras.models import Sequential
-from keras.layers import Dense, Embedding, Conv1D, MaxPooling1D, LSTM
-from tensorflow.keras import regularizers
-from keras.callbacks import ModelCheckpoint
+from keras.layers import Dense, Embedding, LSTM
 import numpy as np
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.models import load_model
 import pickle
 import keras
+import tensorflow as tf
 
 class PolarityModel:
 
@@ -139,7 +137,7 @@ class PolarityModel:
             init='glorot_uniform'
         ):
         model = keras.models.Sequential()
-        model.add(keras.Input(shape=(1,)))
+        model.add(keras.Input(shape=(1,), dtype=tf.string))
         model.add(TextVectorization(
                         max_tokens=self.max_features,
                         output_mode='int',
