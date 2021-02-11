@@ -180,13 +180,13 @@ class PolarityModel:
             optimizer=optimizers,
             batch_size=batches,
             init=init,
-            embedding_dim=dim,
-            class_weight=compute_class_weight('balanced', np.unique(y), np.ravel(y))
+            embedding_dim=dim
         )
         grid = GridSearchCV(estimator=self.model, param_grid=param_grid, cv=5)
         grid_result = grid.fit(
             x,
-            y
+            y,
+            class_weight=compute_class_weight('balanced', np.unique(y), np.ravel(y))
         )
 
     def predict(self, text, **config):
