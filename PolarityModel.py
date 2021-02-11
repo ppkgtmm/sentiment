@@ -179,7 +179,7 @@ class PolarityModel:
         param_grid = dict(
             optimizer=optimizers,
             batch_size=batches,
-            nit=init,
+            init=init,
             embedding_dim=dim,
             class_weight=compute_class_weight('balanced', np.unique(y), np.ravel(y))
         )
