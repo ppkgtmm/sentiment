@@ -14,7 +14,6 @@ from sklearn.model_selection import train_test_split
 from tensorflow.keras.models import load_model
 import pickle
 import keras
-import tensorflow as tf
 
 class PolarityModel:
 
@@ -140,7 +139,7 @@ class PolarityModel:
             init='glorot_uniform'
         ):
         model = keras.models.Sequential()
-        model.add(keras.Input(shape=(1,), dtype=tf.string))
+        model.add(keras.Input(shape=(1,)))
         model.add(TextVectorization(
                         max_tokens=self.max_features,
                         output_mode='int',
