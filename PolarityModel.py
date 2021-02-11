@@ -244,11 +244,11 @@ class PolarityModel:
         K.clear_session()
         if config.get("use_pre", False):
             for layer in self.model.layers:
-            layer.trainable = False
-            layer._name += str("_old")
-            self.model.pop()
-            self.model.pop()
-            model = self.model
+                layer.trainable = False
+                layer._name += str("_old")
+                self.model.pop()
+                self.model.pop()
+                model = self.model
 
         else:
             model = Sequential()
