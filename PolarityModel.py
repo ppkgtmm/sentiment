@@ -132,6 +132,7 @@ class PolarityModel:
 
     def create_model(
             self,
+            tokenizer,
             embedding_dim=100,
             lstm_units=128,
             optimizer='adam',
@@ -139,12 +140,7 @@ class PolarityModel:
         ):
         model = keras.models.Sequential()
         model.add(keras.Input(shape=(1,), dtype=tf.string))
-        model.add(TextVectorization(
-                        max_tokens=self.max_features,
-                        output_mode='int',
-                        output_sequence_length=self.max_len
-                    )
-                )
+        model.add(tokenizer)
         model.add(Embedding(
                             self.max_features,
                             embedding_dim,
@@ -167,6 +163,12 @@ class PolarityModel:
         # supply raw text, OH labels to fit
         self.model = KerasClassifier(
             build_fn=self.create_model,
+            tokenizer=TextVectorization(
+                        max_tokens=self.max_features,
+                        output_mode='int',
+                        output_sequence_length=self.max_len
+                    )
+                ).adapt(np.expand_dims(data['text'], -1))
             epochs=self.epoch,
             verbose=1
         )
