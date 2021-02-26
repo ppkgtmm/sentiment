@@ -44,6 +44,7 @@ def OH_fit_transform(col):
     return OH_transform(col)
 
 def OH_fit(col):
+    global OH_encoder
     OH_encoder = OneHotEncoder(sparse=False)
     OH_encoder.fit(col.values.reshape(-1, 1))
 
