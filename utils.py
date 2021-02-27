@@ -11,10 +11,9 @@ from sklearn.preprocessing import OneHotEncoder
 from kerastuner.tuners import Hyperband
 from kerastuner import HyperParameters
 from keras.optimizers import Adam, Adadelta, Adagrad, RMSprop
-from keras.activations import sigmoid, relu, tanh
 import pickle
 from keras.callbacks import EarlyStopping, ModelCheckpoint
-from sklearn.metrics import accuracy_score,classification_report, \
+from sklearn.metrics import accuracy_score, classification_report, \
 confusion_matrix
 import matplotlib.pyplot as plt
 
