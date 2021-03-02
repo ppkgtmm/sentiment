@@ -78,10 +78,10 @@ def load(path):
 
 def get_callbacks(file_path):
     return [
-          EarlyStopping(monitor='val_loss', patience=5, mode='min', \
+          EarlyStopping(monitor='val_accuracy', patience=5, mode='max', \
                         restore_best_weights=True),
-          ModelCheckpoint(file_path, monitor='val_loss', verbose=1, \
-                          save_best_only=True,  mode='min')
+          ModelCheckpoint(file_path, monitor='val_accuracy', verbose=1, \
+                          save_best_only=True,  mode='max')
     ]
 def get_sequences(tokenizer, max_len, texts):
     return pad_sequences(tokenizer.texts_to_sequences(texts), maxlen=max_len)
