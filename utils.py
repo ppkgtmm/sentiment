@@ -1,3 +1,4 @@
+from typing import List
 import pandas as pd
 import numpy as np
 from keras.preprocessing.text import  Tokenizer
@@ -17,6 +18,7 @@ from sklearn.metrics import accuracy_score, classification_report, \
 confusion_matrix
 import matplotlib.pyplot as plt
 
+# constants
 seed = 123456
 OH_encoder = None
 metrics = [
@@ -28,15 +30,33 @@ metrics = [
             FalsePositives(),
             FalseNegatives()
         ]
+columns = ['text', 'target']
+data_path = '/content/drive/MyDrive/sentiment/data/data_preprocessed.csv'
+test_path = '/content/drive/MyDrive/sentiment/data/test_data_preprocessed.csv'
+num_words = 10000
+max_len = 250
+optimizers = [
+           'Adam',
+           'RMSprop'   
+]
 
-def read_data(data_path, cols):
+def read_data(data_path, cols=columns):
     if cols:
         return pd.read_csv(data_path)[cols]
 
     return pd.read_csv(data_path)
 
 def split_data(data, test_size=0.15, stratify='target'):
-    return train_test_split(data, test_size=0.15, stratify=data[stratify], random_state=seed)
+    return train_test_split(
+        data,
+        test_size=test_size,
+        stratify=data[stratify],
+        random_state=seed
+    )
+
+def read_and_split(data_path=data_path, test_size=0.15, cols=columns):
+    data = read_data(data_path, cols)
+    return split_data(data, test_size, cols[-1])
 
 def OH_fit_transform(col):
     OH_fit(col)
@@ -83,20 +103,27 @@ def get_callbacks(file_path):
           ModelCheckpoint(file_path, monitor='val_accuracy', verbose=1, \
                           save_best_only=True,  mode='max')
     ]
-def get_sequences(tokenizer, max_len, texts):
+def get_sequences(tokenizer, texts, max_len=max_len):
     return pad_sequences(tokenizer.texts_to_sequences(texts), maxlen=max_len)
 
-def get_model_from_config(base_line, optimizer, mtr=metrics):
+def to_sequence(tokenizer,  sets: List, max_len=max_len):
+    tokens_sets = []
+    for set in sets:
+        tokens_sets.append(get_sequences(tokenizer, max_len, set))
+    return tokens_sets
+
+
+def get_model_from_config(base_line, optimizer, loss='categorical_crossentropy', mtr=metrics):
     model = Sequential().from_config(base_line.get_config())
     model.compile(
         optimizer=optimizer,
-        loss='categorical_crossentropy',
+        loss=loss,
         metrics= mtr
     )
     return model
 
 
-def model_evaluate(model, X_test, y_test, batch_size=32):
+def model_evaluate(model, X_test, y_test, batch_size=32, normalize=True):
     # predict class with test set
     y_pred_test =  model.predict_classes(X_test, batch_size=batch_size, verbose=1)
     print('Accuracy:\t{:0.1f}%'.format(accuracy_score(np.argmax(y_test,axis=1),y_pred_test)*100))
@@ -106,7 +133,7 @@ def model_evaluate(model, X_test, y_test, batch_size=32):
     print(classification_report(np.argmax(y_test,axis=1), y_pred_test))
 
     #confusion matrix
-    confmat = confusion_matrix(np.argmax(y_test,axis=1), y_pred_test)
+    confmat = confusion_matrix(np.argmax(y_test,axis=1), y_pred_test, normalize=normalize)
 
     fig, ax = plt.subplots(figsize=(4, 4))
     ax.matshow(confmat, cmap=plt.cm.Purples, alpha=0.3)
