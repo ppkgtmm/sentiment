@@ -1,41 +1,31 @@
+from keras.metrics import BinaryAccuracy, CategoricalAccuracy, Precision,\
+Recall, TrueNegatives, TruePositives, FalseNegatives, FalsePositives
+from keras.losses import BinaryCrossentropy, CategoricalCrossentropy
+from keras.optimizers import Nadam, Adam
 from typing import List
 import pandas as pd
 import numpy as np
-from keras.preprocessing.text import  Tokenizer
 from keras.preprocessing.sequence import pad_sequences
-from keras.layers import Input, Dense
 from keras.models import Sequential
 from sklearn.model_selection import train_test_split
-from keras.metrics import Precision, Recall, FalseNegatives, \
-FalsePositives, TrueNegatives, TruePositives
 from sklearn.preprocessing import OneHotEncoder
-from keras.optimizers import Adam, Adadelta, Adagrad, RMSprop
 import pickle
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from sklearn.metrics import accuracy_score, classification_report, \
 confusion_matrix
 import matplotlib.pyplot as plt
 
-# constants
 seed = 123456
 OH_encoder = None
-metrics = [
-            'accuracy',
-            Precision(), 
-            Recall(),
-            TruePositives(), 
-            TrueNegatives(), 
-            FalsePositives(),
-            FalseNegatives()
-        ]
 columns = ['text', 'target']
 data_path = '/content/drive/MyDrive/sentiment/data/data_preprocessed.csv'
 test_path = '/content/drive/MyDrive/sentiment/data/test_data_preprocessed.csv'
 num_words = 10000
 max_len = 250
 optimizers = [
-           'Adam',
-           'RMSprop'   
+           'adam',
+           'nadam',
+           'amsgrad'   
 ]
 
 def read_data(data_path, cols=columns):
@@ -70,10 +60,9 @@ def OH_transform(col):
      
 def get_optimizer(key):
     map = {
-      'Adam': Adam(),
-      'Adadelta': Adadelta(),
-      'Adagrad': Adagrad(),
-      'RMSprop': RMSprop()
+      'adam': Adam(),
+      'nadam': Nadam(),
+      'amsgrad': Adam(amsgrad=True),
     }
     return map.get(key)
 
@@ -83,29 +72,56 @@ def dump(obj, path):
 def load(path):
     return pickle.load(open(path, 'rb'))
 
-def get_callbacks(file_path):
+def get_callbacks(file_path, monitor='val_accuracy', patience=5):
     return [
-          EarlyStopping(monitor='val_accuracy', patience=5, mode='max', \
+          EarlyStopping(monitor=monitor, patience=patience, \
                         restore_best_weights=True),
-          ModelCheckpoint(file_path, monitor='val_accuracy', verbose=1, \
+          ModelCheckpoint(file_path, monitor=monitor, verbose=1, \
                           save_best_only=True,  mode='max')
     ]
 def get_sequences(tokenizer, texts, max_len=max_len):
     return pad_sequences(tokenizer.texts_to_sequences(texts), maxlen=max_len)
 
-def to_sequence(tokenizer,  sets: List, max_len=max_len):
-    tokens_sets = []
-    for set in sets:
-        tokens_sets.append(get_sequences(tokenizer, max_len, set))
-    return tokens_sets
+def get_binary_loss():
+  return BinaryCrossentropy()
 
+def get_multi_loss():
+  return CategoricalCrossentropy()
+  
+def get_loss(binary=True):
+  if binary:
+    return get_binary_loss()
+  return get_multi_loss()
 
-def get_model_from_config(base_line, optimizer, loss='categorical_crossentropy', mtr=metrics):
+def get_binary_metr():
+  return [
+          BinaryAccuracy(),
+          Precision(),
+          Recall(),
+          TruePositives(),
+          TrueNegatives(),
+          FalsePositives(),
+          FalseNegatives()
+  ]
+
+def get_multi_metr():
+  return [
+          CategoricalAccuracy(),
+          Precision(),
+          Recall()
+  ]
+  
+def get_metr(binary=True):
+  if binary:
+    return get_binary_metr()
+  return get_multi_metr()
+
+def get_model_from_config(base_line, optimizer, binary=True):
     model = Sequential().from_config(base_line.get_config())
     model.compile(
-        optimizer=optimizer,
-        loss=loss,
-        metrics= mtr
+        optimizer=get_optimizer(optimizer),
+        loss=get_loss(binary),
+        metrics=get_metr(binary)
     )
     return model
 
